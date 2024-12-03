@@ -3,6 +3,9 @@ uuid = "281df352-8c17-4805-9961-d9a149125cad"
 authors = ["Dohyun Kim"]
 version = "1.0.0-DEV"
 
+[deps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+
 [compat]
 julia = "1.6.7"
 
