@@ -27,8 +27,18 @@ end
 
 function x!(i::Int, s::State)
     @assert i <= s.n && i > 0
+    stemp = State(s.n);
     mask = s.amps .!= zero(eltype(s.amps))
-    _x!.(Ref(i), s.kets[mask]);
+    for l in findall(mask)
+        temp = similar(s.kets[l]);
+        temp .= s.kets[l];
+        _x!(i, temp)
+        idx = quantumSim.bitarray_to_index(temp)
+        stemp.amps[idx] = s.amps[l]
+    end
+    fillket!(stemp)
+    s.amps .= stemp.amps
+    s.kets .= stemp.kets
 end
 
 function t!(i::Int, s::State)
@@ -53,12 +63,20 @@ function cx!(i::Int, j::Int, s::State)
     @assert i <= s.n && i > 0
     @assert j <= s.n && j > 0
     @assert i != j
+    stemp = State(s.n);
     mask_amp = s.amps .!= zero(eltype(s.amps))
     mask_assn = [isassigned(s.kets, i) for i in eachindex(s.kets)]
     mask_ket = [b == 1 ? s.kets[l][i] : false for (l, b) in enumerate(mask_assn)]
-    mask = mask_amp .& mask_ket
-    for ket in s.kets[mask]
-        ket[j] = !ket[j]
+    mask = mask_amp .| mask_ket
+    for l in findall(mask)
+        temp = similar(s.kets[l]);
+        temp .= s.kets[l];
+        temp[i] == true ? temp[j] = !temp[j] : nothing
+        idx = quantumSim.bitarray_to_index(temp)
+        stemp.amps[idx] = s.amps[l]
     end
+    fillket!(stemp)
+    s.amps .= stemp.amps
+    s.kets .= stemp.kets
 end
 

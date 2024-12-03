@@ -1,25 +1,51 @@
 module quantumSim
 
 using LinearAlgebra
-export QSim, WeightedKet, State, x!, t!, tdg!, cx!, h!
+export QSim, WeightedKet, State, x!, t!, tdg!, cx!, h!, execute!, tokenize, parse_qasm, _parse_qasm
 
+include("parser.jl")
 
+struct State{T <: Complex, TT <: BitArray}
+	n::Int
+	amps::Vector{T}
+	kets::Vector{TT}
+end
 struct QSim{T <: Complex}
 	n::Int # number of qubits
 	m::Int # number of classical bits
-	ops::Array{Array{T, 2}, 1}
-	measure_low::Int
-	measure_high::Int
+	ops::Vector{Operation} # QASM operations
+    s::State{T} # quantum state
 end
 
-function QSim(
-	n::Int,
-	m::Int,
-	measure_low::Int = 1,
-	measure_high::Int = n,
-)
-	ops = Array{Complex, 2}[]
-	return QSim(n, m, ops, measure_low, measure_high)
+function QSim(qasm_path::String)
+    ops = parse_qasm(qasm_path)
+    n = ops[1].args[1]
+    m = ops[2].args[1]
+    nprime = maximum(reduce(vcat, [op.args for op in ops[3:end]]))
+    mprime = n = min(n, nprime)
+    m = min(m, mprime)
+    s = State(n)
+    s.amps[1] = 1.0 + 0.0im
+    s.kets[1] = falses(n)
+	return QSim(n, m, ops[3:end], s)
+end
+
+function execute!(qsim::QSim)
+    for op in qsim.ops
+        if op.operation == "h"
+            h!(op.args[1], qsim.s)
+        elseif op.operation == "x"
+            x!(op.args[1], qsim.s)
+        elseif op.operation == "t"
+            t!(op.args[1], qsim.s)
+        elseif op.operation == "tdg"
+            tdg!(op.args[1], qsim.s)
+        elseif op.operation == "cx"
+            cx!(op.args[1], op.args[2], qsim.s)
+        else
+            error("Unsupported operation: $(op.operation)")
+        end
+    end
 end
 
 struct WeightedKet{T <: Complex}
@@ -46,12 +72,6 @@ function index_to_bitarray(value::Int, n::Int)
 	return BitArray(vcat(zeros(Int, n - length(bits)), bits))
 end
 
-struct State{T <: Complex, TT <: BitArray}
-	n::Int
-	amps::Vector{T}
-	kets::Vector{TT}
-end
-
 function State(n::Int, wks::Vector{WeightedKet{T}}=WeightedKet{ComplexF64}[]) where T <: Complex
     if isempty(wks)
         return State(n, zeros(T, 2^n), Vector{BitArray}(undef, 2^n))
@@ -68,21 +88,7 @@ function State(n::Int, wks::Vector{WeightedKet{T}}=WeightedKet{ComplexF64}[]) wh
 	return State(n, amps, kets)
 end
 
-function state(wks::Vector{WeightedKet{T}}) where T <: Complex
-	if isempty(wks)
-		throw(ArgumentError("Input vector wks cannot be empty."))
-	end
-	if any(length(wk.ket) != length(wks[1].ket) for wk in wks)
-		throw(ArgumentError("All WeightedKet objects must have the same number of qubits."))
-	end
-	state = zeros(T, 2^length(wks[1].ket))
-	for wk in wks
-		idx = bitarray_to_index(wk.ket)
-		state[idx] = wk.amp[1]
-	end
-	return state
-end
-
 include("gates.jl")
+
 
 end
