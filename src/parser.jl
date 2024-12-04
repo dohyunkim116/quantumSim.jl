@@ -1,8 +1,18 @@
+"""
+    struct Operation
+
+Represents a QASM operation with `operation` name and `args` arguments.
+"""
 struct Operation
     operation::String
     args::Vector{Int}
 end
 
+"""
+    normalize_line(line::String) -> String
+
+Normalize spaces and remove extra spaces around brackets in the given `line`.
+"""
 function normalize_line(line::String)
     # Normalize spaces around commas
     line = replace(line, r"\s*,\s*" => ",")
@@ -15,6 +25,11 @@ function normalize_line(line::String)
     return strip(line)
 end
 
+"""
+    tokenize(file_path::String) -> Vector{String}
+
+Read the QASM file at `file_path` and return a vector of tokens.
+"""
 function tokenize(file_path::String)
     lines = readlines(file_path)
     tokens = String[]
@@ -30,6 +45,11 @@ function tokenize(file_path::String)
     return tokens
 end
 
+"""
+    _parse_qasm(tokens::Vector{String}) -> Vector{Operation}
+
+Parse the QASM tokens into a vector of `Operation` objects.
+"""
 function _parse_qasm(tokens::Vector{String})
     instructions = Operation[]
     i = 1
@@ -72,6 +92,11 @@ function _parse_qasm(tokens::Vector{String})
     return instructions
 end
 
+"""
+    parse_qasm(qasm_path::String) -> Vector{Operation}
+
+Parse the QASM file at `qasm_path` and return a vector of `Operation` objects.
+"""
 function parse_qasm(qasm_path::String)
     tokens = tokenize(qasm_path)
     return _parse_qasm(tokens)
