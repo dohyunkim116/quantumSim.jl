@@ -2,6 +2,13 @@
 #using quantumSim
 #using PyCall
 
+try
+    pyimport("cirq")
+catch e
+    @warn "Cirq module not found. Please install Cirq to run these tests."
+    exit(1)
+end
+
 py"""
 from cirq.contrib.qasm_import import circuit_from_qasm
 from cirq import Simulator
