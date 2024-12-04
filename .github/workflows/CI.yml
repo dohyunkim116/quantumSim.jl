@@ -42,7 +42,9 @@ jobs:
         with:
           python-version: '3.x'
       - name: Install Python dependencies
-        run: pip install cirq
+        run: |
+          pip install cirq
+          pip install ply
       - name: Set PYTHON environment variable for PyCall
         run: echo "PYTHON=$(which python)" >> $GITHUB_ENV
       - uses: julia-actions/julia-buildpkg@v1
